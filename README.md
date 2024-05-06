@@ -25,3 +25,45 @@ Ketika kita menggubah port pada sisi client dari `2000` menjadi `8080` maka kita
   }
   ```
 
+#### Experiment 2.3: Small changes, add IP and Port
+![](static/images/smallchange.png)
+Pada sisi client saya mengubah pada kode dibawah karena instance incoming menerima semua pesan masuk dari server dengan protokol websocket. Jika pesan berhasil diterima `(Some(Ok(msg)))`, kode akan memeriksa apakah pesan tersebut merupakan pesan teks `(msg.as_text())`. Jika iya, maka msg akan ditampilkan pada terminal sesuai pada `println!()`.
+```rust
+...
+
+tokio::select! {
+    incoming = ws_stream.next() => {
+        match incoming {
+            Some(Ok(msg)) => {
+                if let Some(text) = msg.as_text() {
+                    println!("Restu's Computer - From server: {}", text);
+                }
+            },
+            ...
+        }
+    }
+}
+
+...
+```
+Pada sisi server saya mengubah pada kode dibawah karena sama dengan sisi client, tetapi pesan yang diterima kemudian disalurkan ke client yang terhubung dengannya menggunakan `bcast_tx.send()`.
+```rust
+...
+
+tokio::select! {
+    incoming = ws_stream.next() => {
+        match incoming {
+            Some(Ok(msg)) => {
+                if let Some(text) = msg.as_text() {
+                    println!("From client {addr:?} {text:?}");
+                    bcast_tx.send(format!("{addr}: {text}"))?;
+                }
+            }
+            ...
+        }
+    }
+    ...
+}
+
+...
+```
